@@ -1,0 +1,121 @@
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Mic, MicOff, X, Volume2, VolumeX } from 'lucide-react';
+import { startVoiceConversation } from '../services/geminiService';
+
+interface VoiceAssistantProps {
+  onClose: () => void;
+  onNavigate: (page: string) => void;
+}
+
+export default function VoiceAssistant({ onClose, onNavigate }: VoiceAssistantProps) {
+  const [status, setStatus] = useState<'connecting' | 'listening' | 'speaking' | 'idle'>('idle');
+  const [isMuted, setIsMuted] = useState(false);
+  const sessionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const initVoice = async () => {
+      setStatus('connecting');
+      const session = await startVoiceConversation({
+        onopen: () => setStatus('listening'),
+        onmessage: async (message) => {
+          if (message.serverContent?.modelTurn?.parts[0]?.inlineData?.data) {
+            setStatus('speaking');
+          }
+
+          // Handle function calls
+          if (message.serverContent?.modelTurn?.parts) {
+            for (const part of message.serverContent.modelTurn.parts) {
+              if (part.functionCall) {
+                const { name, args, id } = part.functionCall;
+                if (name === 'navigateTo') {
+                  onNavigate(args.page);
+                  // Send response back to model
+                  sessionRef.current?.sendToolResponse({
+                    functionResponses: [{
+                      name,
+                      id,
+                      response: { success: true }
+                    }]
+                  });
+                }
+              }
+            }
+          }
+        },
+        onerror: (error) => {
+          console.error(error);
+          setStatus('idle');
+        },
+        onclose: () => setStatus('idle'),
+      });
+      sessionRef.current = session;
+    };
+
+    initVoice();
+
+    return () => {
+      if (sessionRef.current) {
+        sessionRef.current.close();
+      }
+    };
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 100 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 100 }}
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-md"
+    >
+      <div className="bg-[#151619] border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${
+              status === 'listening' ? 'bg-green-500 animate-pulse' :
+              status === 'speaking' ? 'bg-blue-500 animate-bounce' :
+              status === 'connecting' ? 'bg-yellow-500 animate-spin' : 'bg-gray-500'
+            }`} />
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              {status === 'connecting' ? 'Establishing Connection...' :
+               status === 'listening' ? 'Listening...' :
+               status === 'speaking' ? 'Assistant Speaking...' : 'Idle'}
+            </span>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="relative">
+            <div className={`absolute inset-0 rounded-full bg-[#ff4e00]/20 transition-all duration-500 ${
+              status === 'listening' || status === 'speaking' ? 'scale-150 opacity-100' : 'scale-100 opacity-0'
+            }`} />
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
+              status === 'listening' ? 'bg-[#ff4e00] shadow-lg shadow-[#ff4e00]/40' : 'bg-white/5'
+            }`}>
+              {status === 'listening' ? <Mic className="w-8 h-8 text-white" /> : <MicOff className="w-8 h-8 text-gray-500" />}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-3 rounded-xl bg-white/5 text-gray-400 hover:text-white transition-all"
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+          <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-[#ff4e00]"
+              animate={{ width: status === 'speaking' ? '100%' : '0%' }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

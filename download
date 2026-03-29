@@ -1,0 +1,48 @@
+export type Role = 'admin' | 'manager' | 'employee';
+
+export interface User {
+  uid: string;
+  name: string;
+  email: string;
+  role: Role;
+  managerUid?: string;
+  companyId: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  currency: string;
+  country: string;
+  adminUid: string;
+}
+
+export interface Expense {
+  id: string;
+  authorUid: string;
+  amount: number;
+  currency: string;
+  category: string;
+  description: string;
+  date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  companyId: string;
+  currentStep: number;
+  receiptUrl?: string;
+  ocrData?: any;
+}
+
+export interface ApprovalStep {
+  role: Role;
+  specificUserUid?: string;
+  sequence: number;
+  type: 'percentage' | 'specific' | 'hybrid';
+}
+
+export interface ApprovalRule {
+  id: string;
+  companyId: string;
+  category: string;
+  threshold: number;
+  steps: ApprovalStep[];
+}

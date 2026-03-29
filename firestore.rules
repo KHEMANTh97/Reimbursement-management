@@ -1,0 +1,234 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { 
+  Settings as SettingsIcon, 
+  Plus, 
+  Trash2, 
+  CheckCircle2, 
+  AlertCircle, 
+  ChevronRight, 
+  ArrowRight,
+  Shield,
+  Zap,
+  Layers,
+  Percent,
+  User,
+  Combine
+} from 'lucide-react';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
+interface SettingsProps {
+  user: any;
+  company: any;
+}
+
+export default function Settings({ user, company }: SettingsProps) {
+  const [flow, setFlow] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchFlow = async () => {
+      const flowPath = `approvalFlows/${user.companyId}`;
+      const flowDoc = await getDoc(doc(db, 'approvalFlows', user.companyId)).catch(e => handleFirestoreError(e, OperationType.GET, flowPath));
+      if (flowDoc && flowDoc.exists()) {
+        setFlow(flowDoc.data());
+      }
+    };
+    fetchFlow();
+  }, [user.companyId]);
+
+  const handleUpdateFlow = async () => {
+    setLoading(true);
+    try {
+      const flowPath = `approvalFlows/${user.companyId}`;
+      await updateDoc(doc(db, 'approvalFlows', user.companyId), {
+        ...flow,
+        updatedAt: serverTimestamp()
+      }).catch(e => handleFirestoreError(e, OperationType.UPDATE, flowPath));
+    } catch (error) {
+      console.error("Update Flow Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addStep = () => {
+    setFlow({
+      ...flow,
+      steps: [...flow.steps, { role: 'Finance', userId: null, isManager: false }]
+    });
+  };
+
+  const removeStep = (index: number) => {
+    const newSteps = [...flow.steps];
+    newSteps.splice(index, 1);
+    setFlow({ ...flow, steps: newSteps });
+  };
+
+  if (!flow) return null;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Institutional Configuration</h1>
+          <p className="text-gray-400">Define the architectural integrity of your financial workflows. Manage multi-level approvals, conditional logic, and administrative hierarchies.</p>
+        </div>
+        <button 
+          onClick={handleUpdateFlow}
+          disabled={loading}
+          className="px-6 py-3 bg-[#ff4e00] hover:bg-[#e64600] text-white font-bold rounded-xl transition-all shadow-lg shadow-[#ff4e00]/20 flex items-center gap-2"
+        >
+          {loading ? "Updating..." : "Update Configuration"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Multi-Level Approval Flow */}
+        <div className="lg:col-span-2 bg-[#151619] border border-white/5 rounded-2xl p-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-[#ff4e00]/10 rounded-xl">
+                <Layers className="w-6 h-6 text-[#ff4e00]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Multi-Level Approval Flow</h3>
+                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Configure sequential validation stages</p>
+              </div>
+            </div>
+            <button 
+              onClick={addStep}
+              className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+            >
+              <Plus className="w-4 h-4" />
+              Add Stage
+            </button>
+          </div>
+
+          <div className="space-y-6 relative">
+            <div className="absolute left-[27px] top-8 bottom-8 w-[2px] bg-white/5" />
+            
+            {flow.steps.map((step: any, index: number) => (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="relative flex gap-6 group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-[#151619] border-2 border-white/10 flex items-center justify-center font-bold text-white z-10 group-hover:border-[#ff4e00] transition-colors">
+                  {index + 1}
+                </div>
+                <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center justify-between group-hover:bg-white/10 transition-all">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="text-lg font-bold text-white">{step.role} Approval</h4>
+                      <span className="px-2 py-0.5 bg-[#ff4e00]/10 text-[#ff4e00] text-[10px] font-bold rounded-full uppercase tracking-widest">Required</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <User className="w-3 h-3" />
+                      {step.isManager ? "Any Direct Manager" : "Specific Department Head"}
+                    </div>
+                  </div>
+                  {index > 0 && (
+                    <button 
+                      onClick={() => removeStep(index)}
+                      className="p-2 hover:bg-red-500/10 text-gray-600 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rule Logic Engine */}
+        <div className="space-y-6">
+          <div className="bg-[#151619] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#ff4e00]/5 to-transparent pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-[#ff4e00]/10 rounded-xl">
+                  <Zap className="w-6 h-6 text-[#ff4e00]" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Rule Logic Engine</h3>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 mb-8">
+                {[
+                  { id: 'percentage', label: 'Percentage', icon: Percent },
+                  { id: 'specific', label: 'Specific', icon: User },
+                  { id: 'hybrid', label: 'Hybrid', icon: Combine },
+                ].map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => setFlow({ ...flow, rules: { ...flow.rules, type: type.id } })}
+                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                      flow.rules.type === type.id 
+                        ? 'bg-[#ff4e00] border-[#ff4e00] text-white' 
+                        : 'bg-white/5 border-white/10 text-gray-500 hover:bg-white/10'
+                    }`}
+                  >
+                    <type.icon className="w-5 h-5" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2">
+                    <span className="text-gray-500">Approval Threshold (%)</span>
+                    <span className="text-white">{flow.rules.value}% Set</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={flow.rules.value}
+                    onChange={(e) => setFlow({ ...flow, rules: { ...flow.rules, value: parseInt(e.target.value) } })}
+                    className="w-full accent-[#ff4e00] bg-white/5 rounded-full h-2 appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-2">
+                    <span>0%</span>
+                    <span>60% Set</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-[#ff4e00]" />
+                    <span className="text-xs font-bold text-white uppercase tracking-widest">Logic Operator</span>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">"AND" required: All conditions in this step must be met for auto-approval.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#151619] border border-white/5 rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Quick Status Overview</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Active Rules</span>
+                <span className="text-lg font-bold text-white">14</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Pending Sync</span>
+                <span className="text-lg font-bold text-red-500">2</span>
+              </div>
+              <div className="h-[1px] bg-white/5 w-full"></div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">System Health</span>
+                <span className="text-[10px] text-green-500 font-bold uppercase tracking-widest">99.9% Uptime</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

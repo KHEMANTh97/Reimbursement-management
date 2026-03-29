@@ -1,0 +1,143 @@
+import React, { useState, useEffect } from 'react';
+import { auth, db, handleFirestoreError, OperationType } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import Auth from './components/Auth';
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard';
+import ExpenseForm from './components/ExpenseForm';
+import ApprovalQueue from './components/ApprovalQueue';
+import TeamManagement from './components/TeamManagement';
+import Settings from './components/Settings';
+import { Loader2 } from 'lucide-react';
+import { Toaster } from 'sonner';
+
+export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [initialFile, setInitialFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userPath = `users/${firebaseUser.uid}`;
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid)).catch(e => handleFirestoreError(e, OperationType.GET, userPath));
+        if (userDoc && userDoc.exists()) {
+          const userData = userDoc.data();
+          setUser(userData);
+          
+          // Fetch company data
+          const companyPath = `companies/${userData.companyId}`;
+          const companyDoc = await getDoc(doc(db, 'companies', userData.companyId)).catch(e => handleFirestoreError(e, OperationType.GET, companyPath));
+          if (companyDoc && companyDoc.exists()) {
+            setCompany(companyDoc.data());
+          }
+        } else {
+          setUser(null);
+          setCompany(null);
+        }
+      } else {
+        setUser(null);
+        setCompany(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen for user data changes (e.g. role updates, companyId updates)
+  useEffect(() => {
+    if (user?.uid) {
+      const userPath = `users/${user.uid}`;
+      const unsubscribe = onSnapshot(doc(db, 'users', user.uid), async (snapshot) => {
+        if (snapshot.exists()) {
+          const userData = snapshot.data();
+          setUser(userData);
+          
+          // If companyId changed or company is not set, fetch it
+          if (userData.companyId) {
+            const companyPath = `companies/${userData.companyId}`;
+            const companyDoc = await getDoc(doc(db, 'companies', userData.companyId)).catch(e => handleFirestoreError(e, OperationType.GET, companyPath));
+            if (companyDoc && companyDoc.exists()) {
+              setCompany(companyDoc.data());
+            }
+          }
+        }
+      }, (e) => handleFirestoreError(e, OperationType.GET, userPath));
+      return () => unsubscribe();
+    }
+  }, [user?.uid]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0502] flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#ff4e00] animate-spin mb-4" />
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Initializing Ledger...</p>
+      </div>
+    );
+  }
+
+  if (!user || !company) {
+    return <Auth onAuthSuccess={(userData) => setUser(userData)} />;
+  }
+
+  const handleNewExpense = (file?: File) => {
+    if (file) setInitialFile(file);
+    else setInitialFile(null);
+    setShowExpenseForm(true);
+  };
+
+  const renderContent = () => {
+    if (showExpenseForm) {
+      return (
+        <ExpenseForm 
+          user={user} 
+          company={company} 
+          initialFile={initialFile}
+          onSuccess={() => {
+            setShowExpenseForm(false);
+            setInitialFile(null);
+            setActiveTab('dashboard');
+          }} 
+        />
+      );
+    }
+
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard user={user} company={company} onNewExpense={handleNewExpense} />;
+      case 'expenses':
+        return <Dashboard user={user} company={company} onNewExpense={handleNewExpense} />; // Reuse dashboard for now or implement list
+      case 'approvals':
+        return <ApprovalQueue user={user} company={company} />;
+      case 'team':
+        return <TeamManagement user={user} company={company} />;
+      case 'settings':
+        return <Settings user={user} company={company} />;
+      default:
+        return <Dashboard user={user} company={company} onNewExpense={handleNewExpense} />;
+    }
+  };
+
+  return (
+    <>
+      <Toaster position="top-right" theme="dark" />
+      <Layout 
+        user={user} 
+        company={company} 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setShowExpenseForm(false);
+        }}
+        onNewExpense={() => handleNewExpense()}
+      >
+        {renderContent()}
+      </Layout>
+    </>
+  );
+}
