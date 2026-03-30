@@ -56,4 +56,13 @@ Run Locally:
 * Admin: Create company (auto on signup), manage users, set roles, configure approval rules, view all expenses, override approvals.
 * Manager: Approve/reject expenses (amount visible in company's default currency), view team expenses, escalate as per rules.
 * Employee: Submit expenses, view their own expenses, check approval status.
-
+![Image](https://github.com/user-attachments/assets/9bf33778-7dd8-4674-948e-4671faf6a56f)
+![Image](https://github.com/user-attachments/assets/470a6d1f-0fd1-4d91-b2a5-277a7f8311ad)
+![Image](https://github.com/user-attachments/assets/bd6a62e0-d876-4e1c-bcbd-d384c7fa01b7)
+![Image](https://github.com/user-attachments/assets/6a8af88b-d792-4d06-b3aa-f44d4dc3b4fa)
+![Image](https://github.com/user-attachments/assets/60788b18-9907-4aad-8fc8-618f97efcbd6)
+![Image](https://github.com/user-attachments/assets/147c1417-cdc9-44e0-bdb0-cc61c3f97614)
+![Image](https://github.com/user-attachments/assets/520c77aa-b45c-4261-b228-eaba3b4d50a8)
+![Image](https://github.com/user-attachments/assets/4e428ab2-83e4-48b6-aeff-2e84296a8dab)
+![Image](https://github.com/user-attachments/assets/8733ac50-a98d-4510-a8c4-b47cf3668916)
+![Image](https://github.com/user-attachments/assets/320c8606-ed94-4879-8541-bfefb0ff8786)
