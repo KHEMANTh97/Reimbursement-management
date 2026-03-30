@@ -3,7 +3,7 @@
 ## Overview
 Companies often struggle with manual expense reimbursement processes that are time-consuming, error-prone, and lack transparency. Currently, there is no simple way to define approval flows based on thresholds, manage multi-level approvals, or support flexible approval rules. Institutional Ledger solves these challenges by automating the reimbursement workflow.
 
-## Live Demo & Local Setup
+##  Demo & Local Setup
 This repository contains everything you need to run the app locally.
 
 * **Web page:** https://ais-dev-dv4ecgcvziooiehk2ryyeg-35271432078.asia-southeast1.run.app/
