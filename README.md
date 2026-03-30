@@ -7,8 +7,8 @@ Companies often struggle with manual expense reimbursement processes that are ti
 This repository contains everything you need to run the app locally.
 
 * **Web page:** https://ais-dev-dv4ecgcvziooiehk2ryyeg-35271432078.asia-southeast1.run.app/
-* <!-- Failed to upload "Screenrecorder-2026-03-30-21-14-03-797.mp4" -->
-
+**demo video**:
+https://drive.google.com/file/d/10auFgKsbpcwie9iv4ByZJP_vr9nyYxoK/view?usp=drivesd
 **Run Locally:**
 * **Prerequisites:** Node.js
 * **Install dependencies:** `npm install`
